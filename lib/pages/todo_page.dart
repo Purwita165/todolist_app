@@ -627,7 +627,14 @@ DUE DATE FILTER DIALOG
 
     final completedCount = todos.where((t) => t.isDone).length;
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final width = MediaQuery.of(context).size.width;
+    final isMobile = width < 600;
+
+    final headerSize = isMobile ? 22.0 : 24.0;
+
+    final titleSize = isMobile ? 16.0 : 18.0;
+
+    final metaSize = isMobile ? 12.0 : 14.0;
 
     return Scaffold(
       appBar: null,
@@ -646,11 +653,11 @@ DUE DATE FILTER DIALOG
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   "WorkTracker",
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: headerSize,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
@@ -808,6 +815,7 @@ DUE DATE FILTER DIALOG
                             title: Text(
                               todo.description,
                               style: TextStyle(
+                                fontSize: titleSize,
                                 fontWeight: FontWeight.bold,
                                 color: isOverdue ? Colors.red : null,
                                 decoration: todo.isDone
@@ -825,24 +833,32 @@ DUE DATE FILTER DIALOG
                                   spacing: 16,
                                   runSpacing: 4,
                                   children: [
-                                    Text("WorkID: ${todo.workId ?? "-"}"),
+                                    Text("WorkID: ${todo.workId ?? "-"}",
+                                    style: TextStyle(fontSize:metaSize),
+                                    ),
 
-                                    Text("Ref: ${todo.ref ?? "-"}"),
+                                    Text("Ref: ${todo.ref ?? "-"}",
+                                    style: TextStyle(fontSize:metaSize),
+                                    ),
 
                                     Text(
                                       "Priority: ${priorityLabels[todo.priority]}",
                                       style: TextStyle(
                                         color: getPriorityColor(todo.priority),
+                                        fontSize: metaSize,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
 
-                                    Text("Progress: ${todo.progress ?? 0}%"),
+                                    Text("Progress: ${todo.progress ?? 0}%",
+                                    style: TextStyle(fontSize:metaSize),
+                                    ),
 
                                     if (todo.dueDate != null)
                                       Text(
                                         "Due: ${todo.dueDate!.toLocal().toString().split(' ')[0]}",
-                                      ),
+                                    style: TextStyle(fontSize:metaSize),
+                                    ),
                                   ],
                                 ),
 
