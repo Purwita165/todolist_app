@@ -39,6 +39,14 @@ class _TodoPageState extends State<TodoPage> {
   String searchText = "";
 
   /*
+============================================================
+TODAY'S FOCUS STATE
+============================================================
+Menyimpan ID task yang dipilih sebagai fokus hari ini.
+Tidak disimpan ke database (V1).
+*/
+  Set<int> todayFocusIds = {};
+  /*
   ============================================================
   FILTER STATE
   ============================================================
@@ -365,6 +373,34 @@ dueDate = null
   }
 
   /*
+============================================================
+TOGGLE TODAY'S FOCUS
+============================================================
+Menambahkan / menghapus task dari fokus hari ini.
+*/
+  void toggleFocus(Todo todo) {
+    setState(() {
+      if (todayFocusIds.contains(todo.id)) {
+        todayFocusIds.remove(todo.id);
+      } else {
+        todayFocusIds.add(todo.id!);
+      }
+    });
+  }
+
+  /*
+============================================================
+GET TODAY'S FOCUS TASKS
+============================================================
+Mengambil task yang ditandai sebagai fokus hari ini.
+*/
+  List<Todo> getFocusTodos() {
+    return todos
+        .where((t) => todayFocusIds.contains(t.id) && !t.isDone)
+        .toList();
+  }
+
+  /*
   ============================================================
   TASK DIALOG
   ============================================================
@@ -655,6 +691,9 @@ DUE DATE FILTER DIALOG
 
   @override
   Widget build(BuildContext context) {
+
+    final focusTodos = getFocusTodos();
+
     final filteredTodos = getFilteredTodos();
 
     final activeCount = todos.where((t) => !t.isDone).length;
@@ -833,6 +872,35 @@ User cukup tekan Enter untuk menyimpan task.
           const SizedBox(height: 10),
 
           /*
+============================================================
+TODAY'S FOCUS SECTION
+============================================================
+Menampilkan task yang dipilih sebagai fokus hari ini.
+*/
+          if (focusTodos.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Text(
+                "⭐ TODAY'S FOCUS",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+
+            ...focusTodos.map((todo) {
+              return ListTile(
+                leading: const Icon(Icons.star, color: Colors.orange),
+                title: Text(
+                  todo.description,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onTap: () {
+                  openTaskDialog(todo: todo);
+                },
+              );
+            }),
+          ],
+
+          /*
           TASK LIST
           */
           Expanded(
@@ -961,11 +1029,21 @@ User cukup tekan Enter untuk menyimpan task.
                             /*
   EDIT + DELETE BUTTON
   */
-                            trailing: isMobile
-                                ? null
-                                : Row(
+                            trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      IconButton(
+                                        icon: Icon(
+                                          todayFocusIds.contains(todo.id)
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: Colors.orange,
+                                        ),
+                                        onPressed: () {
+                                          toggleFocus(todo);
+                                        },
+                                      ),
+
                                       TextButton(
                                         onPressed: () {
                                           openTaskDialog(todo: todo);
