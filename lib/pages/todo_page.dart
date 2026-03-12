@@ -24,6 +24,7 @@ Fungsi utama:
 import 'package:flutter/material.dart';
 import '../models/todo.dart';
 import '../database/db_helper.dart';
+import 'package:intl/intl.dart';
 
 class TodoPage extends StatefulWidget {
   const TodoPage({Key? key}) : super(key: key);
@@ -298,12 +299,41 @@ dueDate = null
   ============================================================
   */
 
-  Future<void> toggleTodo(Todo todo) async {
-    todo.isDone = !todo.isDone;
+  String formatDate(DateTime? date) {
+    if (date == null) return "";
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
 
-    await dbHelper.updateTodoStatus(todo.id!, todo.isDone ? 1 : 0);
+  Future<void> toggleTodo(Todo todo) async {
+    setState(() {
+      todo.isDone = !todo.isDone;
+
+      if (todo.isDone) {
+        todo.completedAt = DateTime.now();
+      } else {
+        todo.completedAt = null;
+      }
+    });
+
+    await dbHelper.updateTodoStatus(
+      todo.id!,
+      todo.isDone ? 1 : 0,
+      todo.completedAt?.toIso8601String(), // kirim juga completed_at
+    );
 
     await loadTodos();
+  }
+
+  String getDuration(Todo todo) {
+    if (todo.completedAt == null) return "";
+
+    Duration d = todo.completedAt!.difference(todo.taskDate);
+
+    if (d.inDays > 0) {
+      return "${d.inDays} days";
+    } else {
+      return "${d.inHours} hours";
+    }
   }
 
   /*
@@ -691,7 +721,6 @@ DUE DATE FILTER DIALOG
 
   @override
   Widget build(BuildContext context) {
-
     final focusTodos = getFocusTodos();
 
     final filteredTodos = getFilteredTodos();
@@ -917,6 +946,24 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                     itemBuilder: (context, index) {
                       final todo = filteredTodos[index];
 
+                      String metaText;
+
+                      if (todo.isDone) {
+                        metaText =
+                            "WorkID: ${todo.workId}   "
+                            "Ref: ${todo.ref}   "
+                            "Created: ${formatDate(todo.taskDate)}   "
+                            "Completed: ${formatDate(todo.completedAt)}   "
+                            "Duration: ${getDuration(todo)}";
+                      } else {
+                        metaText =
+                            "WorkID: ${todo.workId}   "
+                            "Ref: ${todo.ref}   "
+                            "Priority: ${todo.priority}   "
+                            "Progress: ${todo.progress}%   "
+                            "Due: ${formatDate(todo.dueDate)}";
+                      }
+
                       final isOverdue =
                           todo.dueDate != null &&
                           todo.dueDate!.isBefore(DateTime.now()) &&
@@ -959,6 +1006,11 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const SizedBox(height: 4),
+
+                                Text(
+                                  metaText,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
 
                                 Wrap(
                                   spacing: 16,
@@ -1030,37 +1082,37 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
   EDIT + DELETE BUTTON
   */
                             trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          todayFocusIds.contains(todo.id)
-                                              ? Icons.star
-                                              : Icons.star_border,
-                                          color: Colors.orange,
-                                        ),
-                                        onPressed: () {
-                                          toggleFocus(todo);
-                                        },
-                                      ),
-
-                                      TextButton(
-                                        onPressed: () {
-                                          openTaskDialog(todo: todo);
-                                        },
-                                        child: const Text("Edit"),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () {
-                                          confirmDelete(todo);
-                                        },
-                                      ),
-                                    ],
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    todayFocusIds.contains(todo.id)
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                    color: Colors.orange,
                                   ),
+                                  onPressed: () {
+                                    toggleFocus(todo);
+                                  },
+                                ),
+
+                                TextButton(
+                                  onPressed: () {
+                                    openTaskDialog(todo: todo);
+                                  },
+                                  child: const Text("Edit"),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () {
+                                    confirmDelete(todo);
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );

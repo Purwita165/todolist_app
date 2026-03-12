@@ -29,7 +29,6 @@ import 'package:path/path.dart';
 import '../models/todo.dart';
 
 class DBHelper {
-
   /*
   ========================================================
   SINGLETON PATTERN
@@ -52,7 +51,6 @@ class DBHelper {
   */
 
   Future<Database> get database async {
-
     if (_database != null) return _database!;
 
     _database = await _initDB();
@@ -67,7 +65,6 @@ class DBHelper {
   */
 
   Future<Database> _initDB() async {
-
     final dbPath = await getDatabasesPath();
 
     final path = join(dbPath, _dbName);
@@ -87,7 +84,6 @@ class DBHelper {
   */
 
   Future<void> _createDB(Database db, int version) async {
-
     await db.execute('''
       CREATE TABLE todos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,10 +95,10 @@ class DBHelper {
         due_date TEXT,
         progress INTEGER,
         task_date TEXT,
+        completed_at TEXT,
         is_done INTEGER
       )
     ''');
-
   }
 
   /*
@@ -111,44 +107,22 @@ class DBHelper {
   ========================================================
   */
 
-  Future<void> _onUpgrade(
-    Database db,
-    int oldVersion,
-    int newVersion,
-  ) async {
-
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-
-      await db.execute(
-        'ALTER TABLE todos ADD COLUMN progress INTEGER',
-      );
-
+      await db.execute('ALTER TABLE todos ADD COLUMN progress INTEGER');
     }
 
     if (oldVersion < 3) {
-
-      await db.execute(
-        'ALTER TABLE todos ADD COLUMN work_id TEXT',
-      );
-
+      await db.execute('ALTER TABLE todos ADD COLUMN work_id TEXT');
     }
 
     if (oldVersion < 4) {
+      await db.execute('ALTER TABLE todos ADD COLUMN ref TEXT');
 
-      await db.execute(
-        'ALTER TABLE todos ADD COLUMN ref TEXT',
-      );
+      await db.execute('ALTER TABLE todos ADD COLUMN due_date TEXT');
 
-      await db.execute(
-        'ALTER TABLE todos ADD COLUMN due_date TEXT',
-      );
-
-      await db.execute(
-        'ALTER TABLE todos ADD COLUMN task_date TEXT',
-      );
-
+      await db.execute('ALTER TABLE todos ADD COLUMN task_date TEXT');
     }
-
   }
 
   /*
@@ -158,7 +132,6 @@ class DBHelper {
   */
 
   Future<int> insertTodo(Todo todo) async {
-
     final db = await database;
 
     return await db.insert(
@@ -166,7 +139,6 @@ class DBHelper {
       todo.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-
   }
 
   /*
@@ -176,7 +148,6 @@ class DBHelper {
   */
 
   Future<List<Todo>> getTodos() async {
-
     final db = await database;
 
     final result = await db.query(
@@ -185,7 +156,6 @@ class DBHelper {
     );
 
     return result.map((e) => Todo.fromMap(e)).toList();
-
   }
 
   /*
@@ -194,8 +164,18 @@ class DBHelper {
   ========================================================
   */
 
-  Future<int> updateTodo(Todo todo) async {
+  Future<int> updateTodoStatus(int id, int isDone, String? completedAt) async {
+    final db = await database;
 
+    return await db.update(
+      'todos',
+      {'is_done': isDone, 'completed_at': completedAt},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateTodo(Todo todo) async {
     final db = await database;
 
     return await db.update(
@@ -204,26 +184,6 @@ class DBHelper {
       where: 'id = ?',
       whereArgs: [todo.id],
     );
-
-  }
-
-  /*
-  ========================================================
-  UPDATE STATUS ONLY
-  ========================================================
-  */
-
-  Future<int> updateTodoStatus(int id, int isDone) async {
-
-    final db = await database;
-
-    return await db.update(
-      'todos',
-      {'is_done': isDone},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-
   }
 
   /*
@@ -233,15 +193,9 @@ class DBHelper {
   */
 
   Future<int> deleteTodo(int id) async {
-
     final db = await database;
 
-    return await db.delete(
-      'todos',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-
+    return await db.delete('todos', where: 'id = ?', whereArgs: [id]);
   }
 
   /*
@@ -251,11 +205,8 @@ class DBHelper {
   */
 
   Future close() async {
-
     final db = await instance.database;
 
     db.close();
-
   }
-
 }

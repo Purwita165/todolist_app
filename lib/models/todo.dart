@@ -93,7 +93,6 @@ Todo.progress    → work progress
 */
 
 class Todo {
-
   /*
   ========================================================
   PRIMARY KEY
@@ -197,14 +196,22 @@ class Todo {
   int? progress;
 
   /*
-  ========================================================
-  TASK CREATION DATE
-  ========================================================
-
-  Tanggal task dibuat.
-  */
+============================
+TASK CREATION DATE
+============================
+Tanggal task dibuat.
+*/
 
   final DateTime taskDate;
+
+  /*
+============================
+COMPLETION DATE
+============================
+Tanggal task selesai.
+*/
+
+  DateTime? completedAt;
 
   /*
   ========================================================
@@ -235,6 +242,7 @@ class Todo {
     this.dueDate,
     this.progress,
     required this.taskDate,
+    this.completedAt,
     this.isDone = false,
   });
 
@@ -268,6 +276,7 @@ class Todo {
       'due_date': dueDate?.toIso8601String(),
       'progress': progress,
       'task_date': taskDate.toIso8601String(),
+      'completed_at': completedAt?.toIso8601String(),
       'is_done': isDone ? 1 : 0,
     };
   }
@@ -301,13 +310,16 @@ class Todo {
       priority: map['priority'],
       workId: map['work_id'],
       ref: map['ref'],
-      dueDate: map['due_date'] != null
-          ? DateTime.parse(map['due_date'])
-          : null,
+      dueDate: map['due_date'] != null ? DateTime.parse(map['due_date']) : null,
       progress: map['progress'],
       taskDate: map['task_date'] != null
           ? DateTime.parse(map['task_date'])
           : DateTime.now(),
+
+      completedAt: map['completed_at'] != null
+          ? DateTime.parse(map['completed_at'])
+          : null,
+
       isDone: map['is_done'] == 1,
     );
   }
