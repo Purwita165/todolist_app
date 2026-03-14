@@ -10,13 +10,13 @@ The app is designed to help users plan, track, and execute tasks with progress t
 - Windows (Flutter desktop)
 
 ## Project Structure
-
+```
 lib/
  ├── database/      # SQLite database helper
  ├── models/        # Task data models
  ├── pages/         # UI pages
  └── main.dart      # App entry point
-
+```
 ## Features
 
 - Create and manage tasks
