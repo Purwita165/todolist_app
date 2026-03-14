@@ -1,5 +1,5 @@
 # WorkTracker
-Plan . rack . Execute
+Plan . Track . Execute
 
 WorkTracker is a lightweight task management application built with Flutter and SQLite.
 The app is designed to help users plan, track, and execute tasks with progress tracking, priority levels, and simple task management.
