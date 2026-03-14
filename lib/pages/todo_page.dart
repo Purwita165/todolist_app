@@ -432,6 +432,26 @@ Mengambil task yang ditandai sebagai fokus hari ini.
 
   /*
   ============================================================
+  TOGGLE DONE
+  ============================================================
+  */
+
+  void toggleDone(Todo todo) async {
+    setState(() {
+      todo.isDone = !todo.isDone;
+
+      if (todo.isDone) {
+        todo.completedAt = DateTime.now();
+      } else {
+        todo.completedAt = null;
+      }
+    });
+
+    await dbHelper.updateTodo(todo);
+  }
+
+  /*
+  ============================================================
   TASK DIALOG
   ============================================================
   */
@@ -941,15 +961,32 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                       dense: true,
                       visualDensity: VisualDensity.compact,
 
-                      leading: const Icon(
-                        Icons.star,
-                        size: 14,
-                        color: Colors.orange,
+                      leading: Checkbox(
+                        value: todo.isDone,
+                        onChanged: (value) {
+                          toggleDone(todo);
+                        },
                       ),
 
                       title: Text(
                         todo.description,
-                        style: const TextStyle(fontWeight:FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          decoration: todo.isDone
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+
+                      trailing: IconButton(
+                        icon: const Icon(
+                          Icons.star,
+                          size: 14,
+                          color: Colors.orange,
+                        ),
+                        onPressed: () {
+                          toggleFocus(todo);
+                        },
                       ),
 
                       onTap: () {
