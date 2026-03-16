@@ -28,6 +28,9 @@ import 'package:intl/intl.dart';
 
 enum FilterType { all, active, completed, priority, due }
 
+String? priorityFilter;
+String? dueFilter;
+
 class TodoPage extends StatefulWidget {
   const TodoPage({Key? key}) : super(key: key);
 
@@ -60,6 +63,7 @@ Tidak disimpan ke database (V1).
   String filterMode = "active";
   String? priorityFilter;
   String? dueFilter;
+  String searchQuery = "";
 
   /*
   ============================================================
@@ -108,7 +112,7 @@ Tidak disimpan ke database (V1).
         return Colors.orange;
 
       case "L":
-        return Colors.green;
+        return Colors.blue;
 
       default:
         return Colors.grey;
@@ -124,6 +128,8 @@ Tidak disimpan ke database (V1).
   @override
   void initState() {
     super.initState();
+
+    loadTodos();
 
     quickController.addListener(() {
       setState(() {
@@ -324,7 +330,7 @@ dueDate = null
 
   String formatDate(DateTime? date) {
     if (date == null) return "";
-    return DateFormat('yyyy-MM-dd').format(date);
+    return DateFormat('dd-MM-yyyy').format(date);
   }
 
   Future<void> toggleTodo(Todo todo) async {
@@ -377,22 +383,61 @@ dueDate = null
     final now = DateTime.now();
 
     return todos.where((t) {
-      if (currentFilter == FilterType.active && t.isDone) {
-        return false;
-      }
+      // SEARCH FILTER
+      if (searchText.isNotEmpty) {
+        final query = searchText.toLowerCase();
 
-      if (currentFilter == FilterType.completed && !t.isDone) {
-        return false;
-      }
-
-      if (currentFilter == FilterType.priority) {
-        if (priorityFilter != null && t.priority != priorityFilter) {
+        if (!(t.description.toLowerCase().contains(query) ||
+            (t.workId ?? "").toLowerCase().contains(query) ||
+            (t.ref ?? "").toLowerCase().contains(query))) {
           return false;
         }
       }
 
-      if (currentFilter == FilterType.due) {
-        if (t.dueDate == null) return false;
+      // ACTIVE FILTER
+      if (currentFilter == FilterType.active && t.isDone) {
+        return false;
+      }
+
+      // COMPLETED FILTER
+      if (currentFilter == FilterType.completed && !t.isDone) {
+        return false;
+      }
+
+      // PRIORITY FILTER (ACTIVE ONLY)
+      if (priorityFilter != null) {
+        if (t.isDone) return false;
+
+        if (t.priority != priorityFilter) {
+          return false;
+        }
+      }
+
+      // DUE FILTER (ACTIVE ONLY)
+      if (dueFilter != null) {
+        if (t.isDone) return false;
+
+        if (dueFilter == "overdue") {
+          if (t.dueDate == null || !t.dueDate!.isBefore(now)) {
+            return false;
+          }
+        }
+
+        if (dueFilter == "week") {
+          if (t.dueDate == null) return false;
+
+          final weekLater = now.add(const Duration(days: 7));
+
+          if (t.dueDate!.isAfter(weekLater)) return false;
+        }
+
+        if (dueFilter == "month") {
+          if (t.dueDate == null) return false;
+
+          final monthLater = DateTime(now.year, now.month + 1, now.day);
+
+          if (t.dueDate!.isAfter(monthLater)) return false;
+        }
       }
 
       return true;
@@ -404,10 +449,106 @@ dueDate = null
 
     return GestureDetector(
       onTap: () {
+        // PRIORITY FILTER
+        if (type == FilterType.priority) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text("Select Priority"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      currentFilter = type;
+                      priorityFilter = "H";
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("High"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      currentFilter = type;
+                      priorityFilter = "M";
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Medium"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      currentFilter = type;
+                      priorityFilter = "L";
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Low"),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+
+        // DUE FILTER
+        if (type == FilterType.due) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text("Select Due Filter"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      currentFilter = type;
+                      dueFilter = "overdue";
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Overdue"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      currentFilter = type;
+                      dueFilter = "week";
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("This Week"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      currentFilter = type;
+                      dueFilter = "month";
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("This Month"),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+
+        // FILTER NORMAL
         setState(() {
           currentFilter = type;
+
+          // reset filter tambahan
+          if (type == FilterType.all ||
+              type == FilterType.active ||
+              type == FilterType.completed) {
+            priorityFilter = null;
+            dueFilter = null;
+          }
         });
       },
+
       child: Text(
         label,
         style: TextStyle(
@@ -417,9 +558,7 @@ dueDate = null
       ),
     );
   }
-  /*
-      SEARCH FILTER
-      */
+
   /*
   ============================================================
   TODAY DATE
@@ -428,8 +567,7 @@ dueDate = null
 
   String getToday() {
     final now = DateTime.now();
-
-    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    return DateFormat('dd-MM-yyyy').format(now);
   }
 
   /*
@@ -1116,6 +1254,7 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                           !todo.isDone;
 
                       return Card(
+                        color: Colors.white,
                         elevation: 2,
                         margin: const EdgeInsets.symmetric(
                           vertical: 2,
@@ -1160,6 +1299,9 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                                       todo.description,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        color: isOverdue
+                                            ? Colors.red
+                                            : Colors.black,
                                         decoration: todo.isDone
                                             ? TextDecoration.lineThrough
                                             : null,
@@ -1168,10 +1310,100 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
 
                                     const SizedBox(height: 4),
 
-                                    Text(
-                                      metaText,
-                                      style: const TextStyle(fontSize: 13),
+                                    // BARIS 1
+                                    Text.rich(
+                                      TextSpan(
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black,
+                                        ),
+                                        children: [
+                                          TextSpan(
+                                            text: "WorkID: ${todo.workId}   ",
+                                          ),
+                                          TextSpan(text: "Ref: ${todo.ref}"),
+                                        ],
+                                      ),
                                     ),
+
+                                    const SizedBox(height: 2),
+
+                                    // BARIS 2
+                                    if (todo.isDone)
+                                      Text.rich(
+                                        TextSpan(
+                                          style: const TextStyle(fontSize: 13),
+                                          children: [
+                                            if (todo.workId?.isNotEmpty ??
+                                                false)
+                                              TextSpan(
+                                                text:
+                                                    "WorkID: ${todo.workId}   ",
+                                              ),
+
+                                            if (todo.ref?.isNotEmpty ?? false)
+                                              TextSpan(
+                                                text: "Ref: ${todo.ref}   ",
+                                              ),
+
+                                            TextSpan(
+                                              text:
+                                                  "Created: ${formatDate(todo.taskDate)}   ",
+                                            ),
+
+                                            TextSpan(
+                                              text:
+                                                  "Completed: ${formatDate(todo.completedAt)}   ",
+                                            ),
+
+                                            TextSpan(
+                                              text:
+                                                  "Duration: ${getDuration(todo)}",
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else
+                                      Text.rich(
+                                        TextSpan(
+                                          style: const TextStyle(fontSize: 13),
+                                          children: [
+                                            if (todo.workId?.isNotEmpty ??
+                                                false)
+                                              TextSpan(
+                                                text:
+                                                    "WorkID: ${todo.workId}   ",
+                                              ),
+
+                                            if (todo.ref?.isNotEmpty ?? false)
+                                              TextSpan(
+                                                text: "Ref: ${todo.ref}   ",
+                                              ),
+
+                                            TextSpan(
+                                              text:
+                                                  "Priority: ${priorityLabels[todo.priority]}   ",
+                                              style: TextStyle(
+                                                color: getPriorityColor(
+                                                  todo.priority,
+                                                ),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+
+                                            TextSpan(
+                                              text:
+                                                  "Progress: ${todo.progress}%   ",
+                                            ),
+
+                                            if (todo.dueDate != null)
+                                              TextSpan(
+                                                text:
+                                                    "Due: ${formatDate(todo.dueDate)}",
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -1179,14 +1411,14 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
                               Column(
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.edit, size: 20),
+                                    icon: const Icon(Icons.edit, size: 18),
                                     onPressed: () => openTaskDialog(todo: todo),
                                   ),
 
                                   IconButton(
                                     icon: const Icon(
                                       Icons.delete,
-                                      size: 20,
+                                      size: 18,
                                       color: Colors.red,
                                     ),
                                     onPressed: () => confirmDelete(todo),
