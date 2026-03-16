@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 import '../models/todo.dart';
 
+String formatDuration(int hours) {
+  if (hours < 24) {
+    return "$hours hours";
+  }
+
+  int days = hours ~/ 24;
+
+  if (days < 30) {
+    return "$days days";
+  }
+
+  int months = days ~/ 30;
+
+  return "$months months";
+}
+
 class TodoCard extends StatelessWidget {
   final Todo todo;
   final bool isOverdue;
@@ -65,6 +81,7 @@ class TodoCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  /// TITLE
                   Text(
                     todo.description,
                     style: TextStyle(
@@ -78,14 +95,38 @@ class TodoCard extends StatelessWidget {
 
                   const SizedBox(height: 4),
 
+                  /// METADATA
                   todo.isDone
-                      ? Text(
-                          "Completed: ${formatDate(todo.completedAt)}",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
+                      /// ===== COMPLETED TASK (BATU NISAN) =====
+                      ? Text.rich(
+                          TextSpan(
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                            children: [
+                              TextSpan(text: "WorkID: ${todo.workId ?? ""}   "),
+                              TextSpan(text: "Ref: ${todo.ref ?? ""}   "),
+
+                              TextSpan(
+                                text:
+                                    "Created: ${formatDate(todo.createdAt)}   ",
+                              ),
+
+                              TextSpan(
+                                text:
+                                    "Completed: ${formatDate(todo.completedAt)}   ",
+                              ),
+
+                              TextSpan(
+                                text:
+                                    "Duration: ${formatDuration(todo.duration ?? 0)}",
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            ],
                           ),
                         )
+                      /// ===== ACTIVE TASK =====
                       : Text.rich(
                           TextSpan(
                             style: const TextStyle(fontSize: 13),
@@ -93,45 +134,20 @@ class TodoCard extends StatelessWidget {
                               TextSpan(text: "WorkID: ${todo.workId ?? ""}   "),
                               TextSpan(text: "Ref: ${todo.ref ?? ""}   "),
 
-                              if (!todo.isDone)
-                                TextSpan(
-                                  text:
-                                      "Priority: ${priorityLabels[todo.priority]}   ",
-                                  style: TextStyle(
-                                    color: getPriorityColor(todo.priority),
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              TextSpan(
+                                text:
+                                    "Priority: ${priorityLabels[todo.priority]}   ",
+                                style: TextStyle(
+                                  color: getPriorityColor(todo.priority),
+                                  fontWeight: FontWeight.bold,
                                 ),
+                              ),
 
-                              if (!todo.isDone)
-                                TextSpan(
-                                  text: "Progress: ${todo.progress}%   ",
-                                ),
+                              TextSpan(text: "Progress: ${todo.progress}%   "),
 
-                              if (!todo.isDone)
-                                TextSpan(
-                                  text: "Due: ${formatDate(todo.dueDate)}",
-                                ),
-
-                              if (todo.isDone)
-                                TextSpan(
-                                  text:
-                                      "Created: ${formatDate(todo.createdAt)}   ",
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-
-                              if (todo.isDone)
-                                TextSpan(
-                                  text:
-                                      "Completed: ${formatDate(todo.completedAt)}   ",
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-
-                              if (todo.isDone)
-                                TextSpan(
-                                  text: "Duration: ${todo.duration ?? 0} hours",
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
+                              TextSpan(
+                                text: "Due: ${formatDate(todo.dueDate)}",
+                              ),
                             ],
                           ),
                         ),

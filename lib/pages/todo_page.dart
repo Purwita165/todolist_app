@@ -1223,7 +1223,7 @@ Menampilkan task yang dipilih sebagai fokus hari ini.
             child: filteredTodos.isEmpty
                 ? const Center(
                     child: const Text(
-                      "No tasks yet.\nTap + to add your first task.",
+                      "No tasks yet.\nTap +Add Task to add your first task \nor fill Quick capture ",
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
