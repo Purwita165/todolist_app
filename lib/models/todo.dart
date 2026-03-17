@@ -1,238 +1,100 @@
-/*
-============================================================
-FILE: todo.dart
-============================================================
-
-ROLE FILE INI
--------------
-File ini mendefinisikan MODEL data Todo.
-
-Model adalah struktur data utama yang dipakai oleh aplikasi.
-
-Todo object mewakili satu task yang dibuat oleh user.
-
-============================================================
-ARCHITECTURE POSITION
-------------------------------------------------------------
-
-UI Layer
-↓
-Todo Model  ← file ini
-↓
-Database Layer (DBHelper)
-↓
-SQLite Database
-
-Model menjadi jembatan antara:
-
-UI ↔ Database
-
-============================================================
-SEPARATION OF CONCERN (SOC)
-------------------------------------------------------------
-
-File ini hanya bertanggung jawab untuk:
-
-✔ mendefinisikan struktur data
-✔ mengubah object menjadi Map (untuk database)
-✔ mengubah Map menjadi object
-
-File ini TIDAK boleh berisi:
-
-✘ UI code
-✘ database query
-✘ network request
-
-============================================================
-DATA FLOW
-------------------------------------------------------------
-
-Ketika user membuat task:
-
-User input
-↓
-Todo object dibuat
-↓
-Todo.toMap()
-↓
-DBHelper.insertTodo()
-↓
-SQLite database
-
-Ketika aplikasi membaca data:
-
-SQLite row
-↓
-Map<String,dynamic>
-↓
-Todo.fromMap()
-↓
-UI menampilkan data
-
-============================================================
-FUTURE EXTENSIBILITY
-------------------------------------------------------------
-
-Model Todo ini sengaja dibuat fleksibel.
-
-Di masa depan bisa berkembang menjadi:
-
-Inspection item
-Survey report
-Field activity record
-
-Mapping contoh:
-
-Todo.description → inspection notes
-Todo.soNumber    → project / work order
-Todo.ref         → equipment / location
-Todo.priority    → risk level
-Todo.progress    → work progress
-
-============================================================
-*/
-
 class Todo {
-  /*
-  ========================================================
-  PRIMARY KEY
-  ========================================================
-
-  id adalah unique identifier dari database.
-
-  SQLite akan mengisinya secara otomatis
-  karena menggunakan AUTOINCREMENT.
-  */
-
+  // ========================================================
+  // PRIMARY KEY
+  // ========================================================
+  // Diisi oleh database (AUTOINCREMENT)
   int? id;
 
-  /*
-  ========================================================
-  USER ID (FUTURE MULTI USER SUPPORT)
-  ========================================================
-
-  Saat ini hanya menggunakan local user.
-
-  Tapi struktur ini memungkinkan aplikasi berkembang
-  menjadi multi-user system.
-  */
-
+  // ========================================================
+  // USER IDENTIFICATION
+  // ========================================================
+  // Disiapkan untuk future multi-user / sync system
   final String userId;
 
-  /*
-  ========================================================
-  MAIN TASK DESCRIPTION
-  ========================================================
-
-  Ini adalah isi utama dari task.
-  */
-
+  // ========================================================
+  // CORE TASK CONTENT
+  // ========================================================
+  // Isi utama task (harus selalu ada)
   String description;
 
-  /*
-  ========================================================
-  OPTIONAL METADATA
-  ========================================================
-
-  Sebelumnya: SoNumber
-
-  Sekarang:
-  WorkID
-
-  ref :
-  Saat ini: general reference
-
-  Future:
-  equipment / location reference
-  */
-
+  // ========================================================
+  // CONTEXT IDENTIFIER
+  // ========================================================
+  // workId → relasi ke pekerjaan / project
+  // ref    → relasi ke equipment / lokasi / unit
   final String? workId;
   final String? ref;
 
-  /*
-  ========================================================
-  PRIORITY
-  ========================================================
-
-  Priority level task:
-
-  H = High
-  M = Medium
-  L = Low
-
-  Future mapping:
-
-  priority → risk level (inspection system)
-  */
-
+  // ========================================================
+  // PRIORITY LEVEL
+  // ========================================================
+  // Disarankan konsisten:
+  // H = High, M = Medium, L = Low
   final String priority;
 
-  /*
-  ========================================================
-  DUE DATE
-  ========================================================
-
-  Optional deadline task.
-
-  Future mapping:
-
-  dueDate → inspection date
-  */
-
+  // ========================================================
+  // DEADLINE
+  // ========================================================
+  // Optional → tidak semua task punya deadline
   final DateTime? dueDate;
 
-  /*
-  ========================================================
-  PROGRESS
-  ========================================================
+  // ========================================================
+  // PROGRESS TRACKING
+  // ========================================================
+  // Selalu punya nilai (default = 0)
+  // Hindari null → mencegah bug di UI & perhitungan
+  int progress;
 
-  Progress task dalam persen (0–100).
-
-  Future mapping:
-
-  progress → work progress / inspection progress
-  */
-
-  int? progress;
-
-  /*
-============================
-TASK CREATION DATE
-============================
-Tanggal task dibuat.
-*/
-
+  // ========================================================
+  // TASK DATE
+  // ========================================================
+  // Tanggal task dibuat oleh user (logika bisnis)
   final DateTime taskDate;
 
-  /*
-============================
-COMPLETION DATE
-============================
-Tanggal task selesai.
-*/
-  DateTime? createdAt;
+  // ========================================================
+  // SYSTEM TIMESTAMP
+  // ========================================================
+  // createdAt → kapan data dibuat di sistem
+  // updatedAt → kapan terakhir diubah
+  final DateTime createdAt;
+  DateTime? updatedAt;
+
+  // ========================================================
+  // COMPLETION DATA
+  // ========================================================
+  // completedAt → kapan task selesai
+  // duration    → durasi pengerjaan (opsional)
   DateTime? completedAt;
   int? duration;
 
-  /*
-  ========================================================
-  COMPLETION STATUS
-  ========================================================
-
-  true  → task selesai
-  false → task belum selesai
-  */
-
+  // ========================================================
+  // STATUS MANAGEMENT
+  // ========================================================
+  // isDone → boolean cepat untuk UI
+  // status → lebih fleksibel untuk workflow
+  //
+  // contoh status:
+  // open, in_progress, pending, done, cancelled
   bool isDone;
+  String status;
 
-  /*
-  ========================================================
-  CONSTRUCTOR
-  ========================================================
+  // ========================================================
+  // CLASSIFICATION
+  // ========================================================
+  // Untuk grouping:
+  // maintenance, inspection, audit, dll
+  String? category;
 
-  Constructor digunakan untuk membuat Todo object baru.
-  */
+  // ========================================================
+  // ADDITIONAL NOTES
+  // ========================================================
+  // Catatan lapangan / remark teknisi / inspector
+  String? notes;
 
+  // ========================================================
+  // CONSTRUCTOR
+  // ========================================================
+  // Default value penting untuk mencegah null issue
   Todo({
     this.id,
     required this.userId,
@@ -241,33 +103,23 @@ Tanggal task selesai.
     this.ref,
     required this.priority,
     this.dueDate,
-    this.progress,
-    required this.taskDate,
-    this.createdAt,
-    this.duration,
+    this.progress = 0,
+    DateTime? taskDate,
+    DateTime? createdAt,
+    this.updatedAt,
     this.completedAt,
+    this.duration,
     this.isDone = false,
-  });
+    this.status = 'open',
+    this.category,
+    this.notes,
+  })  : taskDate = taskDate ?? DateTime.now(),
+        createdAt = createdAt ?? DateTime.now();
 
-  /*
-  ========================================================
-  OBJECT → DATABASE MAP
-  ========================================================
-
-  SQLite menyimpan data dalam bentuk Map.
-
-  Karena itu object Todo harus diubah menjadi Map
-  sebelum disimpan ke database.
-
-  Flow:
-
-  Todo Object
-  ↓
-  toMap()
-  ↓
-  SQLite Row
-  */
-
+  // ========================================================
+  // OBJECT → MAP (UNTUK DATABASE)
+  // ========================================================
+  // Semua DateTime diubah ke ISO String
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -279,49 +131,95 @@ Tanggal task selesai.
       'due_date': dueDate?.toIso8601String(),
       'progress': progress,
       'task_date': taskDate.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
       'completed_at': completedAt?.toIso8601String(),
+      'duration': duration,
       'is_done': isDone ? 1 : 0,
+      'status': status,
+      'category': category,
+      'notes': notes,
     };
   }
 
-  /*
-  ========================================================
-  DATABASE MAP → OBJECT
-  ========================================================
-
-  Ketika membaca data dari database,
-  SQLite memberikan hasil dalam bentuk Map.
-
-  Map tersebut diubah kembali menjadi Todo object.
-
-  Flow:
-
-  SQLite Row
-  ↓
-  Map<String,dynamic>
-  ↓
-  Todo.fromMap()
-  ↓
-  Todo object
-  */
-
+  // ========================================================
+  // MAP → OBJECT (DARI DATABASE)
+  // ========================================================
+  // Handle null dengan aman (defensive programming)
   factory Todo.fromMap(Map<String, dynamic> map) {
     return Todo(
       id: map['id'],
       userId: map['user_id'],
       description: map['description'],
-      priority: map['priority'], // ← diperbaiki
+      priority: map['priority'],
       workId: map['work_id'],
       ref: map['ref'],
-      dueDate: map['due_date'] != null ? DateTime.parse(map['due_date']) : null,
-      progress: map['progress'],
+      dueDate: map['due_date'] != null
+          ? DateTime.parse(map['due_date'])
+          : null,
+      progress: map['progress'] ?? 0,
       taskDate: map['task_date'] != null
           ? DateTime.parse(map['task_date'])
           : DateTime.now(),
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'])
+          : DateTime.now(),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'])
+          : null,
       completedAt: map['completed_at'] != null
           ? DateTime.parse(map['completed_at'])
           : null,
+      duration: map['duration'],
       isDone: map['is_done'] == 1,
+      status: map['status'] ?? 'open',
+      category: map['category'],
+      notes: map['notes'],
+    );
+  }
+
+  // ========================================================
+  // COPY WITH (IMMUTABLE UPDATE)
+  // ========================================================
+  // Dipakai untuk update tanpa mengubah object asli
+  // Penting untuk state management (Flutter best practice)
+  Todo copyWith({
+    int? id,
+    String? userId,
+    String? description,
+    String? workId,
+    String? ref,
+    String? priority,
+    DateTime? dueDate,
+    int? progress,
+    DateTime? taskDate,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? completedAt,
+    int? duration,
+    bool? isDone,
+    String? status,
+    String? category,
+    String? notes,
+  }) {
+    return Todo(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      description: description ?? this.description,
+      workId: workId ?? this.workId,
+      ref: ref ?? this.ref,
+      priority: priority ?? this.priority,
+      dueDate: dueDate ?? this.dueDate,
+      progress: progress ?? this.progress,
+      taskDate: taskDate ?? this.taskDate,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      completedAt: completedAt ?? this.completedAt,
+      duration: duration ?? this.duration,
+      isDone: isDone ?? this.isDone,
+      status: status ?? this.status,
+      category: category ?? this.category,
+      notes: notes ?? this.notes,
     );
   }
 }

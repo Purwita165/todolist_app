@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import '../models/todo.dart';
 
+// ============================================================
+// FORMAT DURATION (HELPER)
+// ============================================================
+// Mengubah jam menjadi format manusiawi
 String formatDuration(int hours) {
-  if (hours < 24) {
-    return "$hours hours";
-  }
+  if (hours < 24) return "$hours hours";
 
   int days = hours ~/ 24;
-
-  if (days < 30) {
-    return "$days days";
-  }
+  if (days < 30) return "$days days";
 
   int months = days ~/ 30;
-
   return "$months months";
 }
 
@@ -21,71 +19,94 @@ class TodoCard extends StatelessWidget {
   final Todo todo;
   final bool isOverdue;
 
+  // ============================================================
+  // ACTIONS (DARI PAGE)
+  // ============================================================
   final void Function(Todo) toggleTodo;
-  final void Function(Todo) toggleFocus;
-  final void Function(Todo) confirmDelete;
   final void Function(Todo) openTaskDialog;
-
-  final Map<String, String> priorityLabels;
-  final Color Function(String) getPriorityColor;
-  final String Function(DateTime?) formatDate;
+  final void Function(Todo) confirmDelete;
 
   const TodoCard({
     super.key,
     required this.todo,
     required this.isOverdue,
     required this.toggleTodo,
-    required this.toggleFocus,
-    required this.confirmDelete,
     required this.openTaskDialog,
-    required this.priorityLabels,
-    required this.getPriorityColor,
-    required this.formatDate,
+    required this.confirmDelete,
   });
+
+  // ============================================================
+  // LOCAL HELPER (BIAR TIDAK TERGANTUNG PAGE)
+  // ============================================================
+  Color getPriorityColor(String priority) {
+    switch (priority) {
+      case "H":
+        return Colors.red;
+      case "M":
+        return Colors.orange;
+      case "L":
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String formatDate(DateTime? date) {
+    if (date == null) return "-";
+    return "${date.day.toString().padLeft(2, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.year}";
+  }
+
+  String getPriorityLabel(String p) {
+    switch (p) {
+      case "H":
+        return "High";
+      case "M":
+        return "Medium";
+      case "L":
+        return "Low";
+      default:
+        return "-";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
       child: Padding(
         padding: const EdgeInsets.all(12),
+
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Checkbox(
-                  value: todo.isDone,
-                  onChanged: (_) {
-                    toggleTodo(todo);
-                  },
-                ),
-
-                GestureDetector(
-                  onTap: () => toggleFocus(todo),
-                  child: const Icon(
-                    Icons.star_border,
-                    size: 18,
-                    color: Colors.orange,
-                  ),
-                ),
-              ],
+            // ====================================================
+            // CHECKBOX
+            // ====================================================
+            Checkbox(
+              value: todo.isDone,
+              onChanged: (_) => toggleTodo(todo),
             ),
 
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
 
+            // ====================================================
+            // CONTENT
+            // ====================================================
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// TITLE
+                  // ================= TITLE =================
                   Text(
                     todo.description,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
+                      fontSize: 15,
                       color: isOverdue ? Colors.red : Colors.black,
                       decoration: todo.isDone
                           ? TextDecoration.lineThrough
@@ -93,20 +114,20 @@ class TodoCard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
 
-                  /// METADATA
+                  // ================= META =================
                   todo.isDone
-                      /// ===== COMPLETED TASK (BATU NISAN) =====
+                      // ===== COMPLETED =====
                       ? Text.rich(
                           TextSpan(
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: Colors.grey,
                             ),
                             children: [
-                              TextSpan(text: "WorkID: ${todo.workId ?? ""}   "),
-                              TextSpan(text: "Ref: ${todo.ref ?? ""}   "),
+                              TextSpan(text: "WorkID: ${todo.workId ?? "-"}   "),
+                              TextSpan(text: "Ref: ${todo.ref ?? "-"}   "),
 
                               TextSpan(
                                 text:
@@ -121,22 +142,22 @@ class TodoCard extends StatelessWidget {
                               TextSpan(
                                 text:
                                     "Duration: ${formatDuration(todo.duration ?? 0)}",
-                                style: const TextStyle(color: Colors.grey),
                               ),
                             ],
                           ),
                         )
-                      /// ===== ACTIVE TASK =====
+
+                      // ===== ACTIVE =====
                       : Text.rich(
                           TextSpan(
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 12),
                             children: [
-                              TextSpan(text: "WorkID: ${todo.workId ?? ""}   "),
-                              TextSpan(text: "Ref: ${todo.ref ?? ""}   "),
+                              TextSpan(text: "WorkID: ${todo.workId ?? "-"}   "),
+                              TextSpan(text: "Ref: ${todo.ref ?? "-"}   "),
 
                               TextSpan(
                                 text:
-                                    "Priority: ${priorityLabels[todo.priority]}   ",
+                                    "Priority: ${getPriorityLabel(todo.priority)}   ",
                                 style: TextStyle(
                                   color: getPriorityColor(todo.priority),
                                   fontWeight: FontWeight.bold,
@@ -155,13 +176,15 @@ class TodoCard extends StatelessWidget {
               ),
             ),
 
+            // ====================================================
+            // ACTION BUTTONS
+            // ====================================================
             Column(
               children: [
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
                   onPressed: () => openTaskDialog(todo),
                 ),
-
                 IconButton(
                   icon: const Icon(Icons.delete, size: 20, color: Colors.red),
                   onPressed: () => confirmDelete(todo),

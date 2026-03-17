@@ -1,5 +1,5 @@
-name: worktracker_flutter
-description: A Flutter SQLite WorkTracker
+name: worktracker_v2
+description: "A Flutter SQLite WorkTracker"
 publish_to: 'none'
 
 environment:
